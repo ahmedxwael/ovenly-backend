@@ -2,7 +2,7 @@ import esbuild from "esbuild";
 
 esbuild
 	.build({
-		entryPoints: ["api/index.ts"], // Vercel entry
+		entryPoints: ["vercel-entry.ts"], // Vercel entry
 		bundle: true,
 		platform: "node",
 		target: "node20",
@@ -10,6 +10,10 @@ esbuild
 		outfile: "api/index.js", // Output to api/ for Vercel
 		sourcemap: true,
 		minify: false,
+		loader: {
+			".ts": "ts",
+		},
+		resolveExtensions: [".ts", ".js", ".json"],
 		external: [
 			"dotenv",
 			"express",
