@@ -5,7 +5,7 @@ const isProd = NODE_ENV === "production";
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 const HOST = process.env.HOST ?? "localhost";
 const PROTOCOL = isProd ? "https" : "http";
-const API_URL = `${PROTOCOL}://${HOST}:${PORT}`;
+const API_URL = `${PROTOCOL}://${HOST}${isProd ? "" : `:${PORT}`}`;
 
 export const env = {
 	PORT,
