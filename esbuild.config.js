@@ -40,6 +40,11 @@ async function build() {
 
     console.log(`📦 Found ${tsFiles.length} TypeScript files`);
 
+    // Log route files being compiled
+    const routeFiles = tsFiles.filter((f) => f.includes("routes.ts"));
+    console.log(`📋 Route files found: ${routeFiles.length}`);
+    routeFiles.forEach((f) => console.log(`   - ${f}`));
+
     // Build all files
     const result = await esbuild.build({
       entryPoints: tsFiles,
@@ -60,6 +65,20 @@ async function build() {
 
     console.log("✅ Build completed successfully!");
     console.log(`📁 Output: dist/`);
+
+    // Verify route files were compiled
+    const fs = require("fs");
+    const compiledRoutes = routeFiles.map((f) =>
+      f
+        .replace("src\\", "dist\\")
+        .replace("src/", "dist/")
+        .replace(".ts", ".js")
+    );
+    console.log(`\n🔍 Verifying compiled route files:`);
+    compiledRoutes.forEach((f) => {
+      const exists = fs.existsSync(f);
+      console.log(`   ${exists ? "✓" : "✗"} ${f}`);
+    });
   } catch (error) {
     console.error("❌ Build failed:", error);
     process.exit(1);

@@ -7,11 +7,8 @@ import path from "path";
  * Route files are expected to be named "routes.ts" or "routes.js" and located
  * in subdirectories of the modules folder.
  *
- * This module uses dynamic discovery to automatically find and import route files
- * at runtime, making it easy to add new route modules without manual registration.
- *
- * Note: routes.entry.ts ensures all route files are compiled by esbuild.
- * The entry file is imported separately to avoid circular dependencies.
+ * This module uses fully dynamic discovery - no manual registration needed.
+ * Just create a routes.ts file in any module and it will be automatically discovered.
  */
 
 /**
