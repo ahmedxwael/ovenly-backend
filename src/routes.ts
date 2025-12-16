@@ -8,51 +8,69 @@ import path from "path";
  */
 export async function importRoutes() {
   try {
-    // Get the src directory (works in both dev and production)
-    // In dev: __dirname = src (when using ts-node-dev)
-    // In production/Vercel: __dirname might be dist or the compiled location
-    // Vercel with @vercel/node compiles on-the-fly, so we need to handle both cases
-    let srcDir = __dirname;
+    const isProduction = __dirname.includes("dist");
+    const projectRoot = process.cwd();
 
-    // If we're in a dist folder, go up to find src
-    if (__dirname.includes("dist")) {
-      srcDir = path.join(__dirname, "..", "src");
+    log.info(
+      `Route import starting - __dirname: ${__dirname}, cwd: ${projectRoot}, isProduction: ${isProduction}`
+    );
+
+    // Determine the base directory and modules directory
+    // In production: files are in dist/, so modules are in dist/modules/
+    // In development: files are in src/, so modules are in src/modules/
+    let baseDir: string;
+    let modulesDir: string;
+
+    if (isProduction) {
+      // Production: compiled files are in dist/
+      baseDir = path.join(projectRoot, "dist");
+      modulesDir = path.join(baseDir, "modules");
+    } else {
+      // Development: source files are in src/
+      baseDir = path.join(projectRoot, "src");
+      modulesDir = path.join(baseDir, "modules");
     }
 
-    // If src doesn't exist, try the current directory (Vercel might use different structure)
-    try {
-      await readdir(srcDir);
-    } catch {
-      // If src doesn't exist, use current directory (for Vercel)
-      srcDir = __dirname;
-    }
+    // Try to find modules directory
+    let foundModulesDir = modulesDir;
+    const pathsToTry = [
+      modulesDir,
+      path.join(projectRoot, "src", "modules"),
+      path.join(projectRoot, "dist", "modules"),
+      path.join(__dirname, "modules"),
+      path.join(__dirname, "..", "modules"),
+      path.join(__dirname, "..", "src", "modules"),
+      path.join(__dirname, "..", "dist", "modules"),
+    ];
 
-    const modulesDir = path.join(srcDir, "modules");
-
-    // Check if modules directory exists
-    try {
-      await readdir(modulesDir);
-    } catch (error) {
-      log.warn(
-        `Modules directory not found at ${modulesDir}, trying alternative paths...`
-      );
-      // Try alternative: maybe we're already in src
-      const altModulesDir = path.join(process.cwd(), "src", "modules");
+    let found = false;
+    for (const tryPath of pathsToTry) {
       try {
-        await readdir(altModulesDir);
-        log.info(`Found modules at ${altModulesDir}`);
-        return await importRoutesFromDir(
-          altModulesDir,
-          path.join(process.cwd(), "src")
-        );
-      } catch {
-        throw new Error(
-          `Could not find modules directory. Tried: ${modulesDir}, ${altModulesDir}`
-        );
+        await readdir(tryPath);
+        foundModulesDir = tryPath;
+        // Determine baseDir based on which path worked
+        if (tryPath.includes("dist")) {
+          baseDir = path.dirname(tryPath);
+        } else if (tryPath.includes("src")) {
+          baseDir = path.dirname(tryPath);
+        } else {
+          baseDir = path.dirname(tryPath);
+        }
+        log.info(`Found modules directory at: ${tryPath}`);
+        found = true;
+        break;
+      } catch (error) {
+        // Continue to next path
       }
     }
 
-    return await importRoutesFromDir(modulesDir, srcDir);
+    if (!found) {
+      const errorMsg = `Could not find modules directory. Tried: ${pathsToTry.join(", ")}`;
+      log.error(errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    return await importRoutesFromDir(foundModulesDir, baseDir, isProduction);
   } catch (error) {
     log.error("Error importing routes:", error);
     throw error;
@@ -61,9 +79,10 @@ export async function importRoutes() {
 
 async function importRoutesFromDir(
   modulesDir: string,
-  srcDir: string
+  baseDir: string,
+  isProduction: boolean
 ): Promise<void> {
-  // Recursively find all routes.ts files
+  // Recursively find all routes.ts or routes.js files
   const findRouteFiles = async (dir: string): Promise<string[]> => {
     const files: string[] = [];
     const entries = await readdir(dir, { withFileTypes: true });
@@ -88,30 +107,85 @@ async function importRoutesFromDir(
   const routeFiles = await findRouteFiles(modulesDir);
   log.info(`Found ${routeFiles.length} route file(s) to import`);
 
+  if (routeFiles.length === 0) {
+    log.warn(`No route files found in ${modulesDir}`);
+    return;
+  }
+
   // Import all route files in parallel
   const importPromises = routeFiles.map(async (routeFile) => {
     try {
-      // Convert absolute path to relative path from src directory
-      const relativePath = path.relative(
-        srcDir,
-        routeFile.replace(/\.(ts|js)$/, "")
-      );
+      // Calculate relative path from __dirname (where this file is located) to the route file
+      // This ensures imports work correctly in both dev and production
+      const routeFileWithoutExt = routeFile.replace(/\.(ts|js)$/, "");
+      const relativePath = path.relative(__dirname, routeFileWithoutExt);
 
       // Convert Windows paths to forward slashes
       const normalizedPath = relativePath.replace(/\\/g, "/");
 
-      // In production (dist), we need .js extension for ESM imports
-      // In development, ts-node handles .ts files
-      const isProduction = __dirname.includes("dist");
-      const importPath = isProduction
-        ? `./${normalizedPath}.js`
-        : `./${normalizedPath}`;
+      // Build import path
+      // In production: use .js extension
+      // In development: use relative path without extension (ts-node handles it)
+      let importPath: string;
 
-      log.info(`Importing routes from ${importPath}`);
-      await import(importPath);
-      log.note(`Imported routes from ${importPath}`);
-    } catch (error) {
+      if (isProduction) {
+        // In production, ensure we have .js extension
+        // If path doesn't start with ./, add it
+        importPath = normalizedPath.startsWith(".")
+          ? `${normalizedPath}.js`
+          : `./${normalizedPath}.js`;
+      } else {
+        // In development, use relative path without extension
+        // If path doesn't start with ./, add it
+        importPath = normalizedPath.startsWith(".")
+          ? normalizedPath
+          : `./${normalizedPath}`;
+      }
+
+      log.info(
+        `Importing routes from ${importPath} (file: ${routeFile}, __dirname: ${__dirname})`
+      );
+
+      try {
+        await import(importPath);
+        log.note(`Successfully imported routes from ${importPath}`);
+      } catch (importError: any) {
+        // Fallback: try using file:// URL for absolute path (works in some serverless environments)
+        if (
+          importError?.code === "ERR_MODULE_NOT_FOUND" ||
+          importError?.message?.includes("Cannot find module")
+        ) {
+          log.warn(
+            `Relative import failed, trying file:// URL approach for ${routeFile}`
+          );
+          const fileUrl = `file://${routeFileWithoutExt}${isProduction ? ".js" : ".ts"}`;
+          try {
+            await import(fileUrl);
+            log.note(
+              `Successfully imported routes using file:// URL: ${fileUrl}`
+            );
+          } catch (fileUrlError: any) {
+            log.error(
+              `Both relative and file:// URL imports failed for ${routeFile}`
+            );
+            log.error(
+              `Relative import error: ${importError?.message || importError}`
+            );
+            log.error(
+              `File URL import error: ${fileUrlError?.message || fileUrlError}`
+            );
+            throw importError; // Throw the original error
+          }
+        } else {
+          throw importError;
+        }
+      }
+    } catch (error: any) {
       log.error(`Failed to import route file ${routeFile}:`, error);
+      log.error(`Error details: ${error?.message || error}`);
+      if (error?.stack) {
+        log.error(`Stack trace: ${error.stack}`);
+      }
       throw error;
     }
   });
