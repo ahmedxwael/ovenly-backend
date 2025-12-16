@@ -1,4 +1,5 @@
 import { registerRoutes } from "@/config";
+import { corsOptions } from "@/config/cors";
 import { __DEV__, APP_HOST, APP_PORT } from "@/config/env";
 import {
   errorHandler,
@@ -7,12 +8,14 @@ import {
   staticFiles,
 } from "@/middlewares";
 import { getAllowedUploadsPath, log, logError } from "@/shared/utils";
+import cors from "cors";
 import express, { Express } from "express";
 
 /**
  * Setup middlewares for the Express app
  */
 async function setupMiddlewares(app: Express): Promise<void> {
+  app.use(cors(corsOptions));
   app.use(staticFiles());
   app.use(faviconMiddleware());
   app.use(express.json());
