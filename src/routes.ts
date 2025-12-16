@@ -30,29 +30,35 @@ function getModulesDirectory(): string {
 /**
  * Recursively find all route files (routes.ts or routes.js) in a directory
  */
-async function findRouteFiles(dir: string): Promise<string[]> {
+async function findRouteFiles(
+  dir: string,
+  depth: number = 0
+): Promise<string[]> {
   const routeFiles: string[] = [];
+  const indent = "  ".repeat(depth);
 
   try {
     const entries = await readdir(dir, { withFileTypes: true });
+    log.info(`${indent}Scanning: ${dir} (${entries.length} entries)`);
 
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
 
       if (entry.isDirectory()) {
+        log.info(`${indent}  [DIR] ${entry.name}`);
         // Recursively search subdirectories
-        const subFiles = await findRouteFiles(fullPath);
+        const subFiles = await findRouteFiles(fullPath, depth + 1);
         routeFiles.push(...subFiles);
-      } else if (
-        entry.isFile() &&
-        (entry.name === "routes.ts" || entry.name === "routes.js")
-      ) {
-        routeFiles.push(fullPath);
+      } else {
+        log.info(`${indent}  [FILE] ${entry.name}`);
+        if (entry.name === "routes.ts" || entry.name === "routes.js") {
+          routeFiles.push(fullPath);
+          log.info(`${indent}    ✓ Found route file: ${fullPath}`);
+        }
       }
     }
   } catch (error: any) {
-    // Silently skip directories that can't be read
-    log.warn(`Could not read directory ${dir}: ${error?.message || error}`);
+    log.error(`Could not read directory ${dir}: ${error?.message || error}`);
   }
 
   return routeFiles;
