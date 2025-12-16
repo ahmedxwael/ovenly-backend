@@ -1,20 +1,30 @@
+// Ensure dotenv is loaded before reading env vars
 import "dotenv/config";
 
-const NODE_ENV = process.env.NODE_ENV ?? "development";
-const isProd = NODE_ENV === "production";
-const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
-const HOST = process.env.HOST ?? "localhost";
-const PROTOCOL = isProd ? "https" : "http";
-const API_URL = `${PROTOCOL}://${HOST}${isProd ? "" : `:${PORT}`}`;
+// App Configuration
+export const APP_NAME = process.env.APP_NAME || "My App";
+export const APP_URL = process.env.APP_URL || "http://localhost:3000";
+export const APP_PORT = process.env.PORT || 3000;
+export const APP_HOST = process.env.HOST || "localhost";
+export const __DEV__ = process.env.NODE_ENV === "development";
+export const API_PREFIX = process.env.API_PREFIX || "api";
 
-export const env = {
-	PORT,
-	HOST,
-	API_URL,
-	NODE_ENV,
-	isProd,
-	isDev: !isProd,
-	toString() {
-		return JSON.stringify({ ...this, toString: undefined }, null, 2);
-	},
-};
+// Log Level Configuration
+export const LOG_LEVEL = process.env.LOG_LEVEL || (__DEV__ ? "debug" : "info");
+
+// MongoDB Configuration
+export const DB_NAME = process.env.DATABASE_NAME;
+export const DB_HOST = process.env.DATABASE_HOST || "localhost";
+export const DB_PORT = process.env.DATABASE_PORT || 27017;
+export const DB_URL = process.env.DATABASE_URL;
+export const DB_USER = process.env.DATABASE_USER;
+export const DB_PASS = process.env.DATABASE_PASSWORD;
+
+// JWT Configuration
+export const JWT_SECRET = process.env.JWT_SECRET!;
+
+// SMTP Configuration
+export const SMTP_HOST = process.env.SMTP_HOST;
+export const SMTP_PORT = process.env.SMTP_PORT;
+export const SMTP_USER = process.env.SMTP_USER;
+export const SMTP_PASS = process.env.SMTP_PASS;

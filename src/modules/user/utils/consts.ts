@@ -1,0 +1,15 @@
+export const USER_PUBLIC_FIELDS = [
+  "id",
+  "name",
+  "email",
+  "role",
+  "incomes",
+  "expenses",
+  "goals",
+  "balance",
+  "currency",
+  "totalIncomes",
+  "totalExpenses",
+  "createdAt",
+  "updatedAt",
+];

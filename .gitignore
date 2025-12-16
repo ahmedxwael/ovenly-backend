@@ -1,6 +1,15 @@
-node_modules
-dist
-api/index.js
-api/index.js.map
-vercel-entry.ts
-.env*
+# node
+node_modules/
+dist/
+
+# env files
+.env
+*.local
+
+# typescript
+*.tsbuildinfo
+.vercel
+dist/
+
+# uploads
+uploads/
