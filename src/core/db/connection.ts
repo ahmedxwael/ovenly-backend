@@ -14,10 +14,18 @@ import { Database, db } from "./db";
 
 // Helper functions
 function buildConnectionUrl(): string {
-  if (!__DEV__ && DB_URL) {
+  // Always prefer DB_URL if available (works for both dev and prod)
+  if (DB_URL) {
     return DB_URL;
   }
-  return `mongodb://${DB_HOST}:${DB_PORT}`;
+
+  // Fallback to host:port only in development
+  if (__DEV__) {
+    return `mongodb://${DB_HOST}:${DB_PORT}`;
+  }
+
+  // In production, DB_URL is required
+  return "";
 }
 
 function sanitizeUrl(url: string): string {
@@ -27,8 +35,8 @@ function sanitizeUrl(url: string): string {
 function validateConnectionUrl(url: string | null): void {
   if (!url) {
     const message = __DEV__
-      ? "Database connection URL is not set. Please set DATABASE_HOST and DATABASE_PORT environment variables."
-      : "Database connection URL is not set. Please set DATABASE_URL environment variable for production.";
+      ? "Database connection URL is not set. Please set DATABASE_URL, or DATABASE_HOST and DATABASE_PORT environment variables."
+      : "Database connection URL is not set. Please set DATABASE_URL environment variable in Vercel (Settings > Environment Variables).";
     log.error(message);
     throw new Error(message);
   }
