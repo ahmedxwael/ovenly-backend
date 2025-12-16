@@ -90,7 +90,7 @@ async function importRoutesFromDir(
     const indent = "  ".repeat(depth);
     try {
       const entries = await readdir(dir, { withFileTypes: true });
-      log.info(`${indent}Directory: ${dir}`);
+      log.info(`${indent}Directory: ${dir} (${entries.length} entries)`);
       for (const entry of entries) {
         if (entry.isDirectory()) {
           log.info(`${indent}  [DIR] ${entry.name}`);
@@ -99,33 +99,60 @@ async function importRoutesFromDir(
           log.info(`${indent}  [FILE] ${entry.name}`);
         }
       }
-    } catch (error) {
-      log.error(`${indent}Error reading directory ${dir}:`, error);
+    } catch (error: any) {
+      log.error(
+        `${indent}Error reading directory ${dir}: ${error?.message || error}`
+      );
+      if (error?.stack) {
+        log.error(`${indent}Stack: ${error.stack}`);
+      }
     }
   };
 
   // Log directory structure for debugging
   log.info(`Scanning for route files in: ${modulesDir}`);
-  await logDirectoryContents(modulesDir);
+
+  // First, list all top-level entries to see what modules exist
+  try {
+    const topLevelEntries = await readdir(modulesDir, { withFileTypes: true });
+    log.info(
+      `Top-level modules found: ${topLevelEntries.map((e) => e.name).join(", ")}`
+    );
+    log.info(`Total modules: ${topLevelEntries.length}`);
+  } catch (error: any) {
+    log.error(`Failed to read top-level modules: ${error?.message || error}`);
+  }
+
+  try {
+    await logDirectoryContents(modulesDir);
+  } catch (error: any) {
+    log.error(`Failed to log directory contents: ${error?.message || error}`);
+  }
 
   // Recursively find all routes.ts or routes.js files
   const findRouteFiles = async (dir: string): Promise<string[]> => {
     const files: string[] = [];
-    const entries = await readdir(dir, { withFileTypes: true });
+    try {
+      const entries = await readdir(dir, { withFileTypes: true });
+      log.info(`Searching in directory: ${dir} (${entries.length} entries)`);
 
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
 
-      if (entry.isDirectory()) {
-        const subFiles = await findRouteFiles(fullPath);
-        files.push(...subFiles);
-      } else if (
-        entry.isFile() &&
-        (entry.name === "routes.ts" || entry.name === "routes.js")
-      ) {
-        files.push(fullPath);
-        log.info(`Found route file: ${fullPath}`);
+        if (entry.isDirectory()) {
+          log.info(`  Recursing into directory: ${entry.name}`);
+          const subFiles = await findRouteFiles(fullPath);
+          files.push(...subFiles);
+        } else if (entry.isFile()) {
+          log.info(`  Checking file: ${entry.name}`);
+          if (entry.name === "routes.ts" || entry.name === "routes.js") {
+            files.push(fullPath);
+            log.info(`  ✓ Found route file: ${fullPath}`);
+          }
+        }
       }
+    } catch (error: any) {
+      log.error(`Error searching directory ${dir}: ${error?.message || error}`);
     }
 
     return files;
@@ -136,6 +163,29 @@ async function importRoutesFromDir(
 
   if (routeFiles.length === 0) {
     log.warn(`No route files found in ${modulesDir}`);
+    log.warn(`Attempting fallback: direct import of known route files`);
+
+    // Fallback: Try to import route files directly using known paths
+    const knownRoutePaths = [
+      "./modules/general/routes.js",
+      "./modules/user/routes.js",
+      "./modules/file-uploads/routes.js",
+    ];
+
+    const fallbackImports = knownRoutePaths.map(async (routePath) => {
+      try {
+        log.info(`Trying fallback import: ${routePath}`);
+        await import(routePath);
+        log.note(`Successfully imported route via fallback: ${routePath}`);
+      } catch (error: any) {
+        log.warn(
+          `Fallback import failed for ${routePath}: ${error?.message || error}`
+        );
+        // Don't throw - try other paths
+      }
+    });
+
+    await Promise.all(fallbackImports);
     return;
   }
 
