@@ -2,6 +2,13 @@ import { log } from "@/shared/utils";
 import { readdir } from "fs/promises";
 import path from "path";
 
+// Static imports to ensure route files are compiled by esbuild
+// These imports ensure the files are included in the build output
+// even though they're also imported dynamically at runtime
+import "@/modules/file-uploads/routes";
+import "@/modules/general/routes";
+import "@/modules/user/routes";
+
 /**
  * Automatically imports all routes.ts files from the modules folder
  * This allows each module to define its own routes without manual registration
