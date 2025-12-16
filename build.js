@@ -7,7 +7,7 @@ esbuild
 		platform: "node",
 		target: "node20",
 		format: "esm",
-		outfile: "dist/index.js",
+		outfile: "api/index.js", // Output to api/ for Vercel
 		sourcemap: true,
 		minify: false,
 		external: [
