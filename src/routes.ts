@@ -9,7 +9,12 @@ import path from "path";
  *
  * This module uses dynamic discovery to automatically find and import route files
  * at runtime, making it easy to add new route modules without manual registration.
+ *
+ * Note: routes.entry.ts ensures all route files are compiled by esbuild.
  */
+
+// Import the entry file to ensure route files are compiled
+import "./routes.entry";
 
 /**
  * Get the modules directory path based on the current environment
