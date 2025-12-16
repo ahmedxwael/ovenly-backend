@@ -1,14 +1,18 @@
-import { Express } from "express";
 import { router } from "@/core";
 import { importRoutes } from "@/routes";
 import { log } from "@/shared/utils";
+import { Express } from "express";
 
-export async function registerRoutes(app: Express) {
+/**
+ * Register all routes with the Express app.
+ * Routes are discovered dynamically and registered automatically.
+ */
+export async function registerRoutes(app: Express): Promise<void> {
   try {
-    // Automatically import all routes.ts files from modules folder
+    // Dynamically import all route files from modules folder
     await importRoutes();
 
-    // Scan the routes and register them with Express
+    // Register all discovered routes with Express
     router.scan(app);
 
     const routes = router.getRoutes();
