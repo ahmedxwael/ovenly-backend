@@ -82,6 +82,32 @@ async function importRoutesFromDir(
   baseDir: string,
   isProduction: boolean
 ): Promise<void> {
+  // Helper to log directory contents for debugging
+  const logDirectoryContents = async (
+    dir: string,
+    depth: number = 0
+  ): Promise<void> => {
+    const indent = "  ".repeat(depth);
+    try {
+      const entries = await readdir(dir, { withFileTypes: true });
+      log.info(`${indent}Directory: ${dir}`);
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          log.info(`${indent}  [DIR] ${entry.name}`);
+          await logDirectoryContents(path.join(dir, entry.name), depth + 1);
+        } else {
+          log.info(`${indent}  [FILE] ${entry.name}`);
+        }
+      }
+    } catch (error) {
+      log.error(`${indent}Error reading directory ${dir}:`, error);
+    }
+  };
+
+  // Log directory structure for debugging
+  log.info(`Scanning for route files in: ${modulesDir}`);
+  await logDirectoryContents(modulesDir);
+
   // Recursively find all routes.ts or routes.js files
   const findRouteFiles = async (dir: string): Promise<string[]> => {
     const files: string[] = [];
@@ -98,6 +124,7 @@ async function importRoutesFromDir(
         (entry.name === "routes.ts" || entry.name === "routes.js")
       ) {
         files.push(fullPath);
+        log.info(`Found route file: ${fullPath}`);
       }
     }
 
