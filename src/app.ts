@@ -1,10 +1,10 @@
-import { httpLogger } from "@/middlewares/http-logger.ts";
-import { logger } from "@/utils/logger.ts";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import { errorHandler } from "./middlewares/error-handler.ts";
+import { httpLogger } from "./middlewares/http-logger.ts";
 import generalRoutes from "./modules/general/routes.ts";
+import { logger } from "./utils/logger.ts";
 
 const app = express();
 

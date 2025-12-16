@@ -1,10 +1,9 @@
 import pino from "pino";
-
-const isProd = process.env.NODE_ENV === "production";
+import { env } from "../config/env.ts";
 
 export const logger = pino({
-	level: isProd ? "info" : "debug",
-	transport: isProd
+	level: env.isProd ? "info" : "debug",
+	transport: env.isProd
 		? undefined
 		: {
 				target: "pino-pretty",
