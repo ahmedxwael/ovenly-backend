@@ -11,10 +11,8 @@ import path from "path";
  * at runtime, making it easy to add new route modules without manual registration.
  *
  * Note: routes.entry.ts ensures all route files are compiled by esbuild.
+ * The entry file is imported separately to avoid circular dependencies.
  */
-
-// Import the entry file to ensure route files are compiled
-import "./routes.entry";
 
 /**
  * Get the modules directory path based on the current environment

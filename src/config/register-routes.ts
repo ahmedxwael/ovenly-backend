@@ -9,7 +9,11 @@ import { Express } from "express";
  */
 export async function registerRoutes(app: Express): Promise<void> {
   try {
-    // Dynamically import all route files from modules folder
+    // First, import the entry file to ensure all route files are compiled and registered
+    // This must be done before dynamic discovery to avoid circular dependencies
+    await import("@/routes.entry");
+
+    // Then, dynamically discover and import any additional route files
     await importRoutes();
 
     // Register all discovered routes with Express
