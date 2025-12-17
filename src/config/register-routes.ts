@@ -9,8 +9,8 @@ import { Express } from "express";
  */
 export async function registerRoutes(app: Express): Promise<void> {
   try {
-    // Dynamically discover and import all route files
-    await importRoutes();
+    // Import all route files
+    importRoutes();
 
     // Register all discovered routes with Express
     router.scan(app);
