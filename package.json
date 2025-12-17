@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "node scripts/generate-routes.js && nodemon --exec ts-node -r tsconfig-paths/register src/index.ts",
+    "dev": "nodemon",
     "start": "node dist/index.js",
     "generate-routes": "node scripts/generate-routes.js",
     "build": "node scripts/generate-routes.js && node esbuild.config.js && tsc-alias -p tsconfig.json && copyfiles -u 1 src/public/**/* dist",

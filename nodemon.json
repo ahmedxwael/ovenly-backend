@@ -1,0 +1,6 @@
+{
+  "watch": ["src"],
+  "ext": "ts,json",
+  "ignore": ["src/routes.ts"],
+  "exec": "node scripts/generate-routes.js && ts-node -r tsconfig-paths/register src/index.ts"
+}
